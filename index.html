@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QRISM — Individuelle QR-Codes</title>
+<meta name="description" content="QRISM erstellt lesbare QR-Codes in ausgefallener, individueller Optik — mit Farbverläufen, Formen und eigenem Logo in der Mitte.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0c10">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QRISM">
+<link rel="stylesheet" href="styles.css?v=6">
+</head>
+<body>
+
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="logo.svg" alt="" class="brand-mark">
+    <div class="brand-text">
+      <span class="brand-name">QRISM</span>
+      <span class="brand-tag">Individuelle QR-Codes</span>
+    </div>
+  </div>
+  <button type="button" class="btn-ghost small" id="historyBtn">Verlauf</button>
+</header>
+
+<main class="layout">
+
+  <section class="panel controls" aria-label="Einstellungen">
+
+    <div class="field-group">
+      <label class="field-label" for="qrName">Titel <span class="hint-value">(optional)</span></label>
+      <input type="text" id="qrName">
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">Inhalt</span>
+      <div class="type-tabs" id="typeTabs" role="tablist" aria-label="Inhaltstyp">
+        <button type="button" class="type-tab active" data-type="text">Text / Link</button>
+        <button type="button" class="type-tab" data-type="wifi">WLAN</button>
+        <button type="button" class="type-tab" data-type="vcard">Kontakt</button>
+        <button type="button" class="type-tab" data-type="mailto">E-Mail</button>
+        <button type="button" class="type-tab" data-type="event">Termin</button>
+        <button type="button" class="type-tab" data-type="payment">Zahlung</button>
+        <button type="button" class="type-tab" data-type="social">Social</button>
+      </div>
+    </div>
+
+    <div class="type-panel" id="panel-text">
+      <textarea id="content" rows="2" placeholder="https://deine-seite.de oder beliebiger Text …">https://qrism.app</textarea>
+    </div>
+
+    <div class="type-panel" id="panel-wifi" hidden>
+      <div class="field-row">
+        <div class="field-group half">
+          <label class="field-label" for="wifiSsid">Netzwerkname (SSID)</label>
+          <input type="text" id="wifiSsid" placeholder="Mein WLAN">
+        </div>
+        <div class="field-group half">
+          <label class="field-label" for="wifiEncryption">Verschlüsselung</label>
+          <select id="wifiEncryption">
+            <option value="WPA">WPA / WPA2 / WPA3</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">Offen (kein Passwort)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group half" id="wifiPasswordGroup">
+          <label class="field-label" for="wifiPassword">Passwort</label>
+          <input type="text" id="wifiPassword" placeholder="•••••••••">
+        </div>
+        <div class="field-group half toggle-group">
+          <label class="field-label" for="wifiHidden">Verstecktes Netzwerk</label>
+          <label class="switch">
+            <input type="checkbox" id="wifiHidden">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="type-panel" id="panel-vcard" hidden>
+      <div class="field-row">
+        <div class="field-group half">
+          <label class="field-label" for="vcFirst">Vorname</label>
+          <input type="text" id="vcFirst" placeholder="Max">
+        </div>
+        <div class="field-group half">
+          <label class="field-label" for="vcLast">Nachname</label>
+          <input type="text" id="vcLast" placeholder="Mustermann">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group half">
+          <label class="field-label" for="vcOrg">Band / Firma</label>
+          <input type="text" id="vcOrg" placeholder="optional">
+        </div>
+        <div class="field-group half">
+          <label class="field-label" for="vcTitle">Position</label>
+          <input type="text" id="vcTitle" placeholder="optional">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group half">
+          <label class="field-label" for="vcPhone">Telefon</label>
+          <input type="tel" id="vcPhone" placeholder="+49 …">
+        </div>
+        <div class="field-group half">
+          <label class="field-label" for="vcEmail">E-Mail</label>
+          <input type="email" id="vcEmail" placeholder="name@example.com">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="vcUrl">Website</label>
+        <input type="text" id="vcUrl" placeholder="https://…">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="vcSocial">Social Media</label>
+        <input type="text" id="vcSocial" placeholder="https://linkedin.com/in/your name">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="vcAddress">Adresse</label>
+        <input type="text" id="vcAddress" placeholder="Straße, PLZ Ort (optional)">
+      </div>
+    </div>
+
+    <div class="type-panel" id="panel-mailto" hidden>
+      <div class="field-group">
+        <label class="field-label" for="mailTo">Empfänger</label>
+        <input type="email" id="mailTo" placeholder="name@example.com">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="mailSubject">Betreff</label>
+        <input type="text" id="mailSubject" placeholder="optional">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="mailBody">Nachricht</label>
+        <textarea id="mailBody" rows="2" placeholder="optional"></textarea>
+      </div>
+    </div>
+
+    <div class="type-panel" id="panel-event" hidden>
+      <div class="field-group">
+        <label class="field-label" for="evTitle">Titel</label>
+        <input type="text" id="evTitle">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="evLocation">Ort / Standort</label>
+        <input type="text" id="evLocation" placeholder="Venue, Straße, PLZ Ort">
+      </div>
+      <div class="field-row">
+        <div class="field-group half">
+          <label class="field-label" for="evStart">Beginn</label>
+          <input type="datetime-local" id="evStart">
+        </div>
+        <div class="field-group half">
+          <label class="field-label" for="evEnd">Ende</label>
+          <input type="datetime-local" id="evEnd">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="evDescription">Beschreibung</label>
+        <textarea id="evDescription" rows="2" placeholder="optional"></textarea>
+      </div>
+    </div>
+
+    <div class="type-panel" id="panel-payment" hidden>
+      <div class="field-group">
+        <label class="field-label" for="paymentService">Dienst</label>
+        <select id="paymentService">
+          <option value="paypal">PayPal.me</option>
+          <option value="kofi">Ko-fi</option>
+          <option value="custom">Eigener Link</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="paymentHandle" id="paymentHandleLabel">Benutzername</label>
+        <input type="text" id="paymentHandle" placeholder="deinname">
+      </div>
+      <div class="field-group" id="paymentAmountGroup">
+        <label class="field-label" for="paymentAmount">Betrag in € <span class="hint-value">(optional)</span></label>
+        <input type="text" id="paymentAmount" placeholder="z. B. 5">
+      </div>
+    </div>
+
+    <div class="type-panel" id="panel-social" hidden>
+      <div class="field-group">
+        <label class="field-label" for="socialPlatform">Plattform</label>
+        <select id="socialPlatform">
+          <option value="instagram">Instagram</option>
+          <option value="tiktok">TikTok</option>
+          <option value="youtube">YouTube</option>
+          <option value="facebook">Facebook</option>
+          <option value="x">X (Twitter)</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="spotify">Spotify</option>
+          <option value="custom">Eigener Link</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="socialHandle" id="socialHandleLabel">Benutzername</label>
+        <input type="text" id="socialHandle" placeholder="deinname">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">Stil-Vorlagen</span>
+      <div class="preset-row" id="presetRow" role="group" aria-label="Farb-Vorlagen"></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="field-row">
+      <div class="field-group half">
+        <label class="field-label" for="dotType">Punktform</label>
+        <select id="dotType">
+          <option value="rounded">Abgerundet</option>
+          <option value="dots">Punkte</option>
+          <option value="classy">Klassisch</option>
+          <option value="classy-rounded">Elegant</option>
+          <option value="extra-rounded">Extra rund</option>
+          <option value="square">Quadrate</option>
+        </select>
+      </div>
+      <div class="field-group half">
+        <label class="field-label" for="cornerSquareType">Eckrahmen</label>
+        <select id="cornerSquareType">
+          <option value="extra-rounded">Abgerundet</option>
+          <option value="dot">Rund</option>
+          <option value="square">Eckig</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group half">
+        <label class="field-label" for="cornerDotType">Eckpunkt</label>
+        <select id="cornerDotType">
+          <option value="dot">Rund</option>
+          <option value="square">Eckig</option>
+        </select>
+      </div>
+      <div class="field-group half toggle-group">
+        <label class="field-label" for="colorModeToggle">Verlauf</label>
+        <label class="switch">
+          <input type="checkbox" id="colorModeToggle" checked>
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field-group" id="gradientShapeGroup">
+      <label class="field-label" for="gradientShape">Verlaufsrichtung</label>
+      <select id="gradientShape">
+        <option value="linear">Diagonal</option>
+        <option value="radial">Radial</option>
+      </select>
+    </div>
+    <select id="gradientType" hidden>
+      <option value="linear">Diagonal</option>
+      <option value="radial">Radial</option>
+      <option value="solid">Einfarbig</option>
+    </select>
+
+    <div class="field-row">
+      <div class="field-group half">
+        <label class="field-label" for="colorA">Farbe 1</label>
+        <div class="color-input">
+          <input type="color" id="colorA" value="#7c5cff">
+          <span class="color-value" id="colorAValue">#7C5CFF</span>
+        </div>
+      </div>
+      <div class="field-group half" id="colorBGroup">
+        <label class="field-label" for="colorB">Farbe 2</label>
+        <div class="color-input">
+          <input type="color" id="colorB" value="#22d3ee">
+          <span class="color-value" id="colorBValue">#22D3EE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group half">
+        <label class="field-label" for="bgColor">Hintergrund</label>
+        <div class="color-input">
+          <input type="color" id="bgColor" value="#0b0c10">
+          <span class="color-value" id="bgColorValue">#0B0C10</span>
+        </div>
+      </div>
+      <div class="field-group half toggle-group">
+        <label class="field-label" for="transparentBg">Transparenter Hintergrund</label>
+        <label class="switch">
+          <input type="checkbox" id="transparentBg">
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="field-group">
+      <label class="field-label" for="frameStyle">Rahmen</label>
+      <select id="frameStyle">
+        <option value="none">Kein Rahmen</option>
+        <option value="card">Karte</option>
+        <option value="thin">Dünner Rahmen</option>
+        <option value="thick">Breiter Rahmen</option>
+        <option value="square">Eckig</option>
+        <option value="double">Doppellinie</option>
+        <option value="dashed">Gestrichelt</option>
+        <option value="brackets">Eckklammern</option>
+        <option value="bracketsThin">Eckklammern Fein</option>
+        <option value="bracketsRound">Eckklammern Rund</option>
+        <option value="bracketsBadge">Eckklammern + Badge</option>
+        <option value="dots">Eckpunkte</option>
+        <option value="ring">Ring-Badge</option>
+        <option value="shadow">Weicher Schatten</option>
+        <option value="captionBottom">Banner unten</option>
+        <option value="captionTop">Banner oben</option>
+        <option value="captionBoth">Banner oben &amp; unten</option>
+        <option value="ticket">Ticket</option>
+        <option value="speech">Sprechblase</option>
+        <option value="sticker">Sticker</option>
+        <option value="arrow">Pfeil-Hinweis</option>
+        <option value="ribbon">Eckband</option>
+        <option value="stamp">Stempel</option>
+        <option value="stickyNote">Klebezettel</option>
+        <option value="burst">Comic-Burst</option>
+        <option value="tag">Banner-Etikett</option>
+        <option value="tab">Reiter unten</option>
+        <option value="vertical">Vertikaler Schriftzug</option>
+        <option value="cornerIcon">Eckbadge mit Symbol</option>
+        <option value="house">Haus</option>
+      </select>
+    </div>
+    <div class="field-group" id="frameTextGroup" hidden>
+      <label class="field-label" for="frameText">Rahmentext</label>
+      <input type="text" id="frameText" placeholder="SCAN MICH">
+    </div>
+    <p class="readability-note" id="frameSvgNote" hidden>
+      Rahmen werden aktuell nur im PNG-Export mit ausgegeben — der SVG-Download ist bei aktivem Rahmen deaktiviert.
+    </p>
+
+    <div class="section-divider"></div>
+
+    <div class="field-group">
+      <span class="field-label">Logo / Bild in der Mitte</span>
+      <div class="logo-upload-row">
+        <label class="file-drop" for="logoInput" id="logoDrop">
+          <img id="logoPreviewImg" alt="" hidden>
+          <span id="logoDropText">Bild auswählen …</span>
+        </label>
+        <input type="file" id="logoInput" accept="image/*" hidden>
+        <button type="button" class="btn-ghost small" id="logoRemoveBtn" hidden>Entfernen</button>
+      </div>
+    </div>
+
+    <div class="field-row" id="logoOptionsRow" hidden>
+      <div class="field-group half">
+        <label class="field-label" for="logoSize">Logo-Größe <span class="hint-value" id="logoSizeValue">22%</span></label>
+        <input type="range" id="logoSize" min="10" max="35" value="22">
+      </div>
+      <div class="field-group half toggle-group">
+        <label class="field-label" for="hideDots">Punkte hinter Logo ausblenden</label>
+        <label class="switch">
+          <input type="checkbox" id="hideDots" checked>
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="field-row">
+      <div class="field-group half">
+        <label class="field-label" for="ecLevel">Fehlerkorrektur</label>
+        <select id="ecLevel">
+          <option value="auto">Automatisch (empfohlen)</option>
+          <option value="L">Niedrig (L)</option>
+          <option value="M">Mittel (M)</option>
+          <option value="Q">Hoch (Q)</option>
+          <option value="H">Sehr hoch (H)</option>
+        </select>
+      </div>
+      <div class="field-group half">
+        <label class="field-label" for="exportSize">Exportgröße</label>
+        <select id="exportSize">
+          <option value="512">512 × 512 px</option>
+          <option value="1024" selected>1024 × 1024 px</option>
+          <option value="2048">2048 × 2048 px</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="readability-note" id="readabilityNote">
+      Hoher Kontrast und Fehlerkorrektur „Sehr hoch“ sorgen dafür, dass dein Code auch mit Logo zuverlässig scannbar bleibt.
+    </p>
+
+  </section>
+
+  <section class="panel preview-panel" aria-label="Vorschau">
+    <div class="preview-stage">
+      <div class="qr-frame" id="qrFrame">
+        <div id="qrCanvas"></div>
+      </div>
+    </div>
+    <div class="download-row">
+      <button type="button" class="btn-primary" id="downloadPng">PNG herunterladen</button>
+      <button type="button" class="btn-ghost" id="downloadSvg">SVG herunterladen</button>
+      <button type="button" class="btn-ghost" id="saveBtn">Speichern</button>
+    </div>
+    <p class="scan-hint" id="scanHint"></p>
+  </section>
+
+</main>
+
+<div class="modal-backdrop" id="historyBackdrop" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Verlauf</h2>
+      <div class="modal-header-actions">
+        <button type="button" class="btn-ghost small" id="historyClearBtn" hidden>Alle löschen</button>
+        <button type="button" class="icon-btn" id="historyCloseBtn" aria-label="Schließen">&times;</button>
+      </div>
+    </div>
+    <div class="history-list" id="historyList">
+      <p class="history-empty" id="historyEmpty">Noch keine QR-Codes gespeichert. Gespeicherte Codes erscheinen hier zum erneuten Herunterladen (PNG &amp; SVG) oder Bearbeiten.</p>
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <span>QRISM läuft komplett im Browser — keine Inhalte werden an einen Server übertragen.</span>
+</footer>
+
+<script src="https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
+<script src="app.js?v=5"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
