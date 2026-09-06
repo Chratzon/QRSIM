@@ -346,7 +346,22 @@ input[type="range"] {
 }
 
 #qrCanvas { width: 300px; max-width: 100%; aspect-ratio: 1; height: auto; display: flex; }
-#qrCanvas canvas, #qrCanvas svg, #qrCanvas img { width: 100%; height: 100%; border-radius: 8px; display: block; }
+#qrCanvas canvas, #qrCanvas svg, #qrCanvas img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  border-radius: 8px;
+  display: block;
+  object-fit: contain;
+}
+
+/* Auf schmalen Displays den Rahmen enger fassen und die Vorschau die volle
+   Breite nutzen lassen, damit der Code nicht beschnitten wirkt. */
+@media (max-width: 560px) {
+  .preview-panel { padding: 16px; position: static; }
+  .qr-frame { padding: 12px; width: 100%; }
+  #qrCanvas { width: 100%; }
+}
 
 .download-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 

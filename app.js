@@ -1026,6 +1026,34 @@
     return canvas;
   }
 
+  // qr-code-styling setzt am erzeugten <svg> nur width/height-Attribute, aber
+  // keine viewBox. Ohne viewBox skaliert der SVG-Inhalt nicht mit, wenn das
+  // Element per CSS schmaler wird — auf dem Handy wurde der Code dadurch rechts
+  // und unten abgeschnitten. Wir ergaenzen die viewBox und lassen das SVG den
+  // Container ausfuellen.
+  function fitPreviewSvg() {
+    const svg = els.qrCanvas.querySelector("svg");
+    if (!svg) return;
+    if (!svg.getAttribute("viewBox")) {
+      const w = parseFloat(svg.getAttribute("width"));
+      const h = parseFloat(svg.getAttribute("height"));
+      if (!w || !h) return;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    }
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.removeAttribute("width");
+    svg.removeAttribute("height");
+  }
+
+  // update() zeichnet das SVG asynchron neu (z. B. sobald ein Logo geladen ist),
+  // deshalb dauerhaft beobachten statt nur einmalig nachzubessern.
+  let previewSvgObserver = null;
+  function watchPreviewSvg() {
+    if (previewSvgObserver || typeof MutationObserver === "undefined") return;
+    previewSvgObserver = new MutationObserver(() => fitPreviewSvg());
+    previewSvgObserver.observe(els.qrCanvas, { childList: true, subtree: true });
+  }
+
   async function render() {
     const myToken = ++renderToken;
     const state = collectState();
@@ -1035,6 +1063,7 @@
       const options = buildOptionsFromState(state, 300);
       options.type = "svg";
       if (myToken !== renderToken) return;
+      watchPreviewSvg();
       if (qrPreviewMode !== "svg") {
         els.qrCanvas.innerHTML = "";
         qrCode = new QRCodeStyling(options);
@@ -1043,6 +1072,7 @@
       } else {
         qrCode.update(options);
       }
+      fitPreviewSvg();
       updateScanHint(options, state);
       return;
     }
