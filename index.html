@@ -377,6 +377,17 @@
       </div>
     </div>
 
+    <div class="field-row" id="logoCutoutRow" hidden>
+      <div class="field-group half">
+        <label class="field-label" for="logoCutout">Form der Aussparung</label>
+        <select id="logoCutout">
+          <option value="square" selected>Eckig</option>
+          <option value="round">Rund</option>
+        </select>
+      </div>
+      <div class="field-group half"></div>
+    </div>
+
     <div class="section-divider"></div>
 
     <div class="field-row">
@@ -444,7 +455,7 @@
 
 <script src="https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
 <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

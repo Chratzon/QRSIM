@@ -73,6 +73,8 @@
     logoSize: $("logoSize"),
     logoSizeValue: $("logoSizeValue"),
     hideDots: $("hideDots"),
+    logoCutout: $("logoCutout"),
+    logoCutoutRow: $("logoCutoutRow"),
     ecLevel: $("ecLevel"),
     exportSize: $("exportSize"),
     qrCanvas: $("qrCanvas"),
@@ -167,6 +169,9 @@
   }
 
   let logoDataUrl = null;
+  // Natürliche Bildmaße des Logos — für die runde Aussparung muss die Logo-Fläche
+  // (in QR-Modulen) genauso berechnet werden wie in qr-code-styling selbst.
+  let logoNatural = null;
   // Ab dieser Logo-Größe (Anteil der Fehlerkorrektur) wird vor dem Risiko gewarnt.
   const LOGO_RISK_THRESHOLD = 0.45;
   // Parameter der Kamera-Simulation im Scan-Check.
@@ -411,6 +416,7 @@
 
     const logoSizeRatio = Number(els.logoSize.value) / 100;
     const data = getContentStringFromState(state);
+    const roundCutout = hasLogo && els.logoCutout.value === "round";
 
     return {
       width: size,
@@ -421,7 +427,9 @@
       image: logoDataUrl || undefined,
       imageOptions: {
         crossOrigin: "anonymous",
-        hideBackgroundDots: els.hideDots.checked,
+        // Bei runder Aussparung blendet unser Patch (installRoundLogoCutout) die
+        // Punkte aus; die eckige Aussparung der Bibliothek bleibt dann aus.
+        hideBackgroundDots: els.hideDots.checked && !roundCutout,
         imageSize: logoSizeRatio,
         margin: 6,
       },
@@ -431,7 +439,76 @@
       backgroundOptions: {
         color: state.transparentBg ? "transparent" : state.bgColor,
       },
+      // Eigene Option (wird von qr-code-styling ignoriert, siehe installRoundLogoCutout).
+      roundLogoCutout: roundCutout && els.hideDots.checked && logoNatural
+        ? { width: logoNatural.width, height: logoNatural.height }
+        : null,
     };
+  }
+
+  // --- Runde Logo-Aussparung: qr-code-styling kennt nur eine eckige Aussparung.
+  // Wir berechnen die Logo-Fläche in Modulen exakt wie die Bibliothek und lassen
+  // isDark() für alle Module innerhalb der eingeschriebenen Ellipse (bei quadratischen
+  // Logos: Kreis) „hell“ melden. Die Bibliothek fragt isDark() erst ab, nachdem das
+  // Logo geladen ist — also nach update() — daher reicht ein Patch direkt danach.
+  // Da die Ellipse innerhalb der eckigen Fläche liegt, werden nie mehr Module
+  // verdeckt als bei der eckigen Variante.
+  const EC_HIDE_FACTOR = { L: 0.07, M: 0.15, Q: 0.25, H: 0.3 };
+
+  function logoHiddenDots(opts, count) {
+    const nat = opts.roundLogoCutout;
+    const dotSize = Math.floor((Math.min(opts.width, opts.height) - 2 * opts.margin) / count);
+    const maxHidden = Math.floor(
+      opts.imageOptions.imageSize * EC_HIDE_FACTOR[opts.qrOptions.errorCorrectionLevel] * count * count
+    );
+    const maxAxis = count - 14;
+    if (nat.width <= 0 || nat.height <= 0 || maxHidden <= 0 || dotSize <= 0) return null;
+    const k = nat.height / nat.width;
+    let x = Math.floor(Math.sqrt(maxHidden / k));
+    if (x <= 0) x = 1;
+    if (maxAxis && maxAxis < x) x = maxAxis;
+    if (x % 2 === 0) x--;
+    let y = 1 + 2 * Math.ceil((x * k - 1) / 2);
+    if (y * x > maxHidden || (maxAxis && maxAxis < y)) {
+      if (maxAxis && maxAxis < y) {
+        y = maxAxis;
+        if (y % 2 === 0) x--;
+      } else {
+        y -= 2;
+      }
+      x = 1 + 2 * Math.ceil((y / k - 1) / 2);
+    }
+    return { x, y };
+  }
+
+  function applyRoundLogoCutout(instance) {
+    const opts = instance._options;
+    const qr = instance._qr;
+    if (!qr || !opts || !opts.roundLogoCutout || !opts.image) return;
+    const count = qr.getModuleCount();
+    const hidden = logoHiddenDots(opts, count);
+    if (!hidden) return;
+    const c = count / 2;
+    const rx = hidden.x / 2;
+    const ry = hidden.y / 2;
+    const isDark = qr.isDark.bind(qr);
+    qr.isDark = (row, col) => {
+      const dx = (row + 0.5 - c) / rx;
+      const dy = (col + 0.5 - c) / ry;
+      if (dx * dx + dy * dy <= 1) return false;
+      return isDark(row, col);
+    };
+  }
+
+  function installRoundLogoCutout() {
+    if (typeof QRCodeStyling !== "function" || QRCodeStyling.prototype.__roundCutout) return;
+    const origUpdate = QRCodeStyling.prototype.update;
+    QRCodeStyling.prototype.update = function (options) {
+      const result = origUpdate.call(this, options);
+      applyRoundLogoCutout(this);
+      return result;
+    };
+    QRCodeStyling.prototype.__roundCutout = true;
   }
 
   // --- Rahmen: Frames werden per Canvas um das (bereits fertig gerenderte) QR-Bild
@@ -1282,13 +1359,20 @@
   function handleLogoFile(file) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
+      logoNatural = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
+        img.onerror = () => resolve(null);
+        img.src = reader.result;
+      });
       logoDataUrl = reader.result;
       els.logoPreviewImg.src = logoDataUrl;
       els.logoPreviewImg.hidden = false;
       els.logoDropText.textContent = file.name;
       els.logoRemoveBtn.hidden = false;
       els.logoOptionsRow.hidden = false;
+      els.logoCutoutRow.hidden = false;
       render();
     };
     reader.readAsDataURL(file);
@@ -1296,12 +1380,14 @@
 
   function removeLogo() {
     logoDataUrl = null;
+    logoNatural = null;
     els.logoInput.value = "";
     els.logoPreviewImg.src = "";
     els.logoPreviewImg.hidden = true;
     els.logoDropText.textContent = "Bild auswählen …";
     els.logoRemoveBtn.hidden = true;
     els.logoOptionsRow.hidden = true;
+    els.logoCutoutRow.hidden = true;
     render();
   }
 
@@ -1684,7 +1770,11 @@
     });
     els.frameText.addEventListener("input", render);
 
-    els.hideDots.addEventListener("change", render);
+    els.hideDots.addEventListener("change", () => {
+      els.logoCutout.disabled = !els.hideDots.checked;
+      render();
+    });
+    els.logoCutout.addEventListener("change", render);
     els.ecLevel.addEventListener("change", render);
 
     els.logoSize.addEventListener("input", () => {
@@ -1734,6 +1824,7 @@
   }
 
   function init() {
+    installRoundLogoCutout();
     buildPresetRow();
     syncColorLabels();
     syncColorModeUI();
