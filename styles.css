@@ -374,6 +374,21 @@ input[type="range"] {
 }
 .scan-hint.warn { color: var(--pink); }
 
+.scan-check {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+.scan-check.ok { color: #4ade80; border-color: rgba(74, 222, 128, 0.35); }
+.scan-check.warn { color: #fbbf24; border-color: rgba(251, 191, 36, 0.35); }
+.scan-check.fail { color: var(--pink); border-color: rgba(255, 92, 173, 0.45); }
+
 .page-footer {
   position: relative;
   z-index: 1;

@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="QRISM">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 
@@ -366,7 +366,7 @@
     <div class="field-row" id="logoOptionsRow" hidden>
       <div class="field-group half">
         <label class="field-label" for="logoSize">Logo-Größe <span class="hint-value" id="logoSizeValue">22%</span></label>
-        <input type="range" id="logoSize" min="10" max="35" value="22">
+        <input type="range" id="logoSize" min="10" max="70" value="22">
       </div>
       <div class="field-group half toggle-group">
         <label class="field-label" for="hideDots">Punkte hinter Logo ausblenden</label>
@@ -417,6 +417,7 @@
       <button type="button" class="btn-ghost" id="downloadSvg">SVG herunterladen</button>
       <button type="button" class="btn-ghost" id="saveBtn">Speichern</button>
     </div>
+    <p class="scan-check" id="scanCheck" role="status" aria-live="polite" hidden></p>
     <p class="scan-hint" id="scanHint"></p>
   </section>
 
@@ -442,7 +443,8 @@
 </footer>
 
 <script src="https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
-<script src="app.js?v=6"></script>
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="app.js?v=7"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
