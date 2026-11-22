@@ -1,12 +1,12 @@
 // Bei jeder inhaltlichen Änderung an index.html/app.js/styles.css: CACHE_NAME hochzählen
 // und die Versions-Query-Strings unten an die in index.html verwendeten anpassen.
-const CACHE_NAME = "qrism-shell-v6";
+const CACHE_NAME = "qrism-shell-v7";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css?v=8",
-  "./app.js?v=7",
+  "./app.js?v=8",
   "./manifest.json",
   "./logo.svg",
   "./icons/icon-192.png",
