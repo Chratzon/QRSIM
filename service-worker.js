@@ -1,12 +1,12 @@
 // Bei jeder inhaltlichen Änderung an index.html/app.js/styles.css: CACHE_NAME hochzählen
 // und die Versions-Query-Strings unten an die in index.html verwendeten anpassen.
-const CACHE_NAME = "qrism-shell-v5";
+const CACHE_NAME = "qrism-shell-v6";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=7",
-  "./app.js?v=6",
+  "./styles.css?v=8",
+  "./app.js?v=7",
   "./manifest.json",
   "./logo.svg",
   "./icons/icon-192.png",
@@ -15,7 +15,10 @@ const APP_SHELL = [
   "./icons/icon-180.png",
 ];
 
-const CDN_FILES = ["https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"];
+const CDN_FILES = [
+  "https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js",
+  "https://unpkg.com/jsqr@1.4.0/dist/jsQR.js",
+];
 
 self.addEventListener("install", (event) => {
   // cache.addAll() is all-or-nothing: one failed URL (e.g. a transient hiccup

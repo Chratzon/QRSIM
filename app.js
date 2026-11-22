@@ -80,6 +80,7 @@
     downloadSvg: $("downloadSvg"),
     saveBtn: $("saveBtn"),
     scanHint: $("scanHint"),
+    scanCheck: $("scanCheck"),
     historyBtn: $("historyBtn"),
     historyBackdrop: $("historyBackdrop"),
     historyCloseBtn: $("historyCloseBtn"),
@@ -166,6 +167,11 @@
   }
 
   let logoDataUrl = null;
+  // Ab dieser Logo-Größe (Anteil der Fehlerkorrektur) wird vor dem Risiko gewarnt.
+  const LOGO_RISK_THRESHOLD = 0.45;
+  // Parameter der Kamera-Simulation im Scan-Check.
+  const SCAN_CHECK_PX_PER_MODULE = 3;
+  const SCAN_CHECK_BLUR = 0.5;
   let qrCode = null;
   let qrPreviewMode = null;
   let activeType = "text";
@@ -1074,6 +1080,7 @@
       }
       fitPreviewSvg();
       updateScanHint(options, state);
+      scheduleScanCheck(state);
       return;
     }
 
@@ -1088,6 +1095,7 @@
       qrCode = null;
       const rawOptions = buildOptionsFromState(state, previewSize);
       updateScanHint(rawOptions, state);
+      scheduleScanCheck(state);
     } catch (e) {
       // Vorschau-Fehler sollen die App nicht blockieren
     }
@@ -1096,7 +1104,10 @@
   function updateScanHint(options, state) {
     const hasLogo = !!logoDataUrl;
     const logoSizeRatio = Number(els.logoSize.value) / 100;
-    if (hasLogo && options.qrOptions.errorCorrectionLevel !== "H" && logoSizeRatio > 0.22) {
+    if (hasLogo && logoSizeRatio > LOGO_RISK_THRESHOLD) {
+      els.scanHint.textContent = "Sehr großes Logo — der Code verliert an Reserve und lässt sich auf manchen Handys, bei Unschärfe oder schlechtem Licht evtl. nicht mehr scannen. Bitte vor dem Drucken mit mehreren Handys testen.";
+      els.scanHint.classList.add("warn");
+    } else if (hasLogo && options.qrOptions.errorCorrectionLevel !== "H" && logoSizeRatio > 0.22) {
       els.scanHint.textContent = "Großes Logo bei niedriger Fehlerkorrektur — für sichere Lesbarkeit „Sehr hoch“ wählen oder Logo verkleinern.";
       els.scanHint.classList.add("warn");
     } else if (!options.data.trim()) {
@@ -1114,6 +1125,104 @@
         ? "Fehlerkorrektur „Sehr hoch“ aktiv — der Code bleibt trotz Logo zuverlässig scannbar."
         : "";
       els.scanHint.classList.remove("warn");
+    }
+  }
+
+  // ---------- Scan-Check ----------
+  // Dekodiert den gerenderten Code direkt im Browser (jsQR), einmal scharf und
+  // einmal verkleinert + leicht unscharf, um eine Handykamera grob nachzustellen.
+  let scanCheckTimer = null;
+  let scanCheckToken = 0;
+
+  function setScanCheck(status, text) {
+    els.scanCheck.hidden = !status;
+    els.scanCheck.className = "scan-check" + (status ? " " + status : "");
+    els.scanCheck.textContent = text || "";
+  }
+
+  function scheduleScanCheck(state) {
+    clearTimeout(scanCheckTimer);
+    scanCheckTimer = setTimeout(() => runScanCheck(state), 350);
+  }
+
+  function decodeCanvas(canvas, expected) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const result = jsQR(img.data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
+    if (!result) return null;
+    let bytes = "";
+    for (let i = 0; i < result.binaryData.length; i++) bytes += String.fromCharCode(result.binaryData[i]);
+    return bytes === expected ? result : null;
+  }
+
+  function scaleCanvas(src, width, blur) {
+    const c = document.createElement("canvas");
+    c.width = c.height = width;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, width);
+    if (blur) ctx.filter = `blur(${blur}px)`;
+    ctx.drawImage(src, 0, 0, width, width);
+    return c;
+  }
+
+  async function runScanCheck(state) {
+    const token = ++scanCheckToken;
+    if (typeof jsQR !== "function") return setScanCheck(null);
+    const expected = buildOptionsFromState(state, 10).data;
+    if (!expected.trim()) return setScanCheck(null);
+    setScanCheck("pending", "Lesbarkeit wird geprüft …");
+
+    try {
+      const size = 600;
+      const bitmap = await rasterizeQr(state, size);
+      if (token !== scanCheckToken) return;
+      const frame = getFrame(state.frameStyle);
+      let canvas;
+      if (frame.id === "none") {
+        canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff"; // transparenter Hintergrund wird meist auf Weiß gedruckt
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(bitmap, 0, 0);
+      } else {
+        canvas = drawFramedQr(size, frame, state, bitmap);
+      }
+
+      // Scharfer Durchgang: in mehreren Auflösungen versuchen — jsQR liest manche
+      // Punkt-Stile (z. B. „Punkte“) bei sehr hoher Auflösung schlechter.
+      let sharp = null;
+      let sharpCanvas = null;
+      for (const w of [300, 450, 600, 200]) {
+        const c = w === canvas.width ? canvas : scaleCanvas(canvas, w, 0);
+        sharp = decodeCanvas(c, expected);
+        if (sharp) { sharpCanvas = c; break; }
+      }
+      if (token !== scanCheckToken) return;
+      if (!sharp) {
+        return setScanCheck("fail", "✕ Nicht lesbar — Logo verkleinern, Fehlerkorrektur erhöhen oder Kontrast verbessern.");
+      }
+
+      // Kamera-Simulation: auf ca. 3 px pro Modul verkleinern und leicht weichzeichnen.
+      const modules = 17 + 4 * sharp.version;
+      const finderDist = Math.hypot(
+        sharp.location.topRightFinderPattern.x - sharp.location.topLeftFinderPattern.x,
+        sharp.location.topRightFinderPattern.y - sharp.location.topLeftFinderPattern.y
+      );
+      const pxPerModule = finderDist / (modules - 7);
+      const scale = Math.min(1, SCAN_CHECK_PX_PER_MODULE / pxPerModule);
+      const small = scaleCanvas(sharpCanvas, Math.max(32, Math.round(sharpCanvas.width * scale)), SCAN_CHECK_BLUR);
+      const rough = decodeCanvas(small, expected);
+      if (token !== scanCheckToken) return;
+
+      if (rough) {
+        setScanCheck("ok", "✓ Scan-Test bestanden — der Code wurde erfolgreich gelesen.");
+      } else {
+        setScanCheck("warn", "⚠ Knapp — scharf lesbar, aber bei Unschärfe nicht mehr. Logo verkleinern oder mit dem Handy testen.");
+      }
+    } catch (e) {
+      if (token === scanCheckToken) setScanCheck(null);
     }
   }
 
